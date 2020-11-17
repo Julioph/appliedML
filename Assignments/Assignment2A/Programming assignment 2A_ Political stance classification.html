@@ -1,0 +1,305 @@
+
+<!-- saved from url=(0052)http://www.cse.chalmers.se/~richajo/dit866/pa2a.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Programming assignment 2A: Political stance classification</title>
+    <link rel="stylesheet" type="text/css" href="./Programming assignment 2A_ Political stance classification_files/assignments.css">
+
+<style>
+    pre {
+      display:inline-block;
+    }
+</style>    
+
+  <script src="./Programming assignment 2A_ Political stance classification_files/jquery.min.js.download"></script><script>
+$(document).ready(function(){
+  $("button.toggler").click(function(){
+    $(this).text(function(i, text){
+          return text === "Show solution" ? "Hide solution" : "Show solution";
+      });
+    $(this).next().toggle(100);
+  });
+});
+</script></head>
+
+  
+
+
+<body>
+    <h1>Programming assignment 2A: Political stance classification</h1>
+
+<p>
+In this assignment, you will solve a supervised machine learning task and write a report that describes your solution. The data that you will use for training and evaluation will be annotated collectively by all participants in the course.
+</p>
+
+<p>
+The machine learning task that will be addressed in this assignment is to develop a text classifier that determines whether a given textual comment expresses an opinion that is positive or negative towards <em><a href="https://en.wikipedia.org/wiki/Brexit">Brexit</a></em>: the United Kingdom leaving the European Union.      
+</p>
+  
+<p>
+The first two parts of this assignment deal with data annotation and are solved individually. In the third and final part, you will implement the classification system, and here you will work in a group of two or three people.</p>
+
+<p>
+Didactic purpose of this assignment:
+</p>
+<ul>
+  <li>Getting some practical understanding of annotating data and inter-annotator agreement.</li>
+  <li>Practice several aspects of system development based on machine learning: getting data, cleaning data, processing and selecting features, selecting and tuning a model, evaluating.
+  </li><li>Analysing results in a machine learning experiment.
+  </li><li>Describing the implementation, experiments, and results in a report.
+</li></ul>
+
+<h2>Part 1: Crowdsourcing the data</h2>
+
+<p>
+Your task here is to collect at least 100 Brexit-related comments from social media or the comment fields from online articles.
+<!--You may look at social media sites such as Youtube etc, as well as British newspapers such as-->
+Good places to trawl for comments include social media sites such as <a href="https://www.youtube.com/results?search_query=brexit">Youtube</a>, and newspaper sites in Britain and elsewhere, such as
+<a href="https://www.telegraph.co.uk/">the Telegraph</a>, <a href="https://www.theguardian.com/">the Guardian</a>, <a href="https://www.dailymail.co.uk/">Daily Mail</a>, <a href="https://www.independent.co.uk/">the Independent</a>, <a href="https://www.thesun.co.uk/">the Sun</a>, <a href="https://www.express.co.uk/">Daily Express</a>, <a href="https://www.breitbart.com/tag/brexit">Breitbart</a>, <a href="https://www.huffingtonpost.com/section/world-news">Huffington Post</a> or other English-language sources.
+</p>
+
+    <p>
+      Collect comments that express a pro- or anti-Brexit stance. We will create a balanced dataset, so you should try to collect about 50 instances of each stance. <b>Do not include comments not expressing an opinion about Brexit. Also, since other annotators will see each comment in isolation, don't include comments where you need to read previous comments to understand the opinion (e.g. <em>"You're wrong!"</em>).</b>
+      Try to select comments from a variety of sources.
+    </p>
+      
+    <p>
+      Store all the comments you collected in an Excel file. This file should have two columns. The first column will store your <b>annotation</b> of whether this comment is pro-Brexit (represented as <b>1</b> in the spreadsheet) or anti-Brexit (<b>0</b> in the spreadsheet). The second column should store the text of the comment. Make sure that the text of each comment is stored in a single cell.
+      The following figure shows an example.
+    </p>
+
+<div style="background-color:#eeffff; border:1px solid #ddf0f0; padding: 5px; display: inline-block;">
+<img height="200" src="./Programming assignment 2A_ Political stance classification_files/brexit_annotation_example.png">
+</div>
+
+<p>Submit the Excel file via the <a href="https://chalmers.instructure.com/courses/8685/assignments/12618">Canvas page</a>. If you have trouble using Canvas, please send your solution by email to Richard directly, with the subject line <em>Applied Machine Learning: Programming assignment 2A part 1</em>.
+</p>
+
+<p>
+<b>Important.</b> The submitted Excel files will be processed automatically. For this reason, it is important that you format the Excel file <em>exactly</em> as above. Don't change the labels, the column order, or add "explanatory" comments, etc.
+</p>
+  
+
+<p><b>Deadline for Part 1: February 5</b></p>
+
+<h2>Part 2: Second round of annotation</h2>
+
+<p>
+After you have submitted your annotated comments, you will receive back a set of about 100 other comments. You will find these comments as an attachment to the feedback comment in Canvas. Annotate them as well, and submit the file containing your annotations.
+<b>
+If you think it's impossible to understand a comment as pro-Brexit or anti-Brexit, you can enter the value -1, which will mean "I don't know".
+</b>
+</p>
+
+<p><b>Deadline for Part 2: February 10</b></p>
+
+<p>Again, submit the second Excel file using the <a href="https://chalmers.instructure.com/courses/8685/assignments/12619">Canvas page</a>. And again, use email if you have trouble with Canvas, this time using the subject line <em>Applied Machine Learning: Programming assignment 2A part 2</em>.
+</p>
+
+<!--    <p>
+      <b>Update (Feb 10): <a href="data/a2_train_final.tsv">here</a> is the full dataset, including the result of the second round of annotation.</b>
+    </p> -->
+
+<h2>Part 3: Implementing your classifier</h2>
+
+    <p>
+      Write the code to implement a classifier that determines whether a given comment expresses a pro-Brexit or anti-Brexit stance.
+Initially, you will work with a small sample that you can use to get things set up.     
+Eventually, you will receive the full dataset: first including the result of the first annotation, and later the result of the second round. Please note that your results may change (e.g. which model performs best) when you switch from the small sample to the full dataset.
+</p>
+
+<!--<p>
+<b>NB:</b> Please make sure that it is easy to run your classifier on a test set, stored in a separate file using the same format as the training data.
+</p>-->
+
+<p>
+You may take some inspiration from the document classification examples shown in the <a href="http://www.cse.chalmers.se/~richajo/dit866/backup_2019/lectures/l2/Cross-domain%20classification%20example.html">code presented in Lecture 4</a> (<a href="http://www.cse.chalmers.se/~richajo/dit866/backup_2019/lectures/l2/Cross-domain%20classification%20example.ipynb">notebook</a>). However, it is probably useful to try to improve over this solution. For instance, you may read more about the <a href="https://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.text.TfidfVectorizer.html">TfidfVectorizer</a> and see what you can do with it.
+</p>      
+
+<p>
+Then write a report
+detailing your implementation, your experiments and analysis.
+In
+particular, we'd like to know:
+</p>
+  
+<ul>
+  <li>How much consensus is there between annotators of the dataset? Do you think the data is reliable?</li>
+  <li>How do you represent your data as features?</li>
+  <li>Did you process the features in any way?</li>
+  <!--<li>Did you bring in any additional sources of data?</li>-->
+  <li>How did you select which learning algorithms to use?</li>
+  <li>Did you try to tune the hyperparameters of the learning algorithm, and in
+    that case how?</li>
+  <li>How do you evaluate the quality of your system?</li>
+  <li>How well does your system compare to a trivial baseline?</li>
+  <li>Can you say anything about the errors that the system makes?
+  For a classification task, you may consider
+  a <a href="http://scikit-learn.org/stable/modules/model_evaluation.html#confusion-matrix">confusion
+      matrix</a>. It is also probably meaningful to include selected errors and comment on what might have gone wrong.</li>
+  <li>Is it possible to say something about which features the model
+  considers important? (Whether this is possible depends on the type
+  of classifier you are using.)
+</li></ul>
+
+<p>
+The submitted report should be around 3 pages. Use <a href="http://www.cse.chalmers.se/~richajo/dit866/files/templates.zip">the following template</a> to write the report. It should be written as a typical technical report including sections for the introduction, method description, results, conclusion. The report should be a pdf, Word or LibreOffice document. 
+Please include the names of all the students in the group.
+</p>
+
+<p>
+The code can be standalone Python files or Jupyter notebooks. 
+</p>
+
+<p>                                                                         
+Please use the <a href="https://chalmers.instructure.com/courses/8685/assignments/12620">Canvas page</a> to submit your solution. If you have trouble using Canvas, please send your solution by email to Richard directly, with the subject line <em>Applied Machine Learning: Programming assignment 2A, part 3</em>.
+
+</p><p>
+  <b>Grading.</b>
+Grading will be based (1) on whether the report is insightful and lives up to professional standards of technical writing, including decent clarity, spelling, grammar, and structure, and (2) on whether the technical solutions are justified and the code well-implemented. <!--Again, based on previous experience we'd like to stress that the writing -->
+</p>
+
+<p>
+  <b style="color:red;">Clarification (Feb 13).</b> Your report should not be in the form of a bullet list that just goes through the discussion points listed above. It should be a typical technical report.  
+</p>
+  
+<p></p>
+<p><b>Deadline part 3: February 19</b></p>
+
+
+<h3>The datasets and their format</h3>
+
+<p>
+The <b>training data</b> will be stored in a text file consisting of tab-separated columns, where the first column
+contains the output labels (1 for pro-Brexit, 0 for anti-Brexit) and
+the second contains the comments. To exemplify, here are some of the examples in the sample data:
+</p>
+
+<pre>0       Brexit is a hoax, based on lies.
+1       Brexit ain't broken, we're leaving in March. If we don't then democracy will be broken.
+0       I voted to remain... because I'm NOT a racist.
+1       Just leave, we don't want uk in eu
+</pre>
+  
+<p>
+<b style="color:red;">Update (Feb 4).</b> <a href="http://www.cse.chalmers.se/~richajo/dit866/data/a2_first_sample.tsv">Here</a> is a preliminary sample (894 instances) that you can work with when you start coding. After the first round of annotation has been completed, you'll get a larger set.
+</p>
+
+<p>
+<b style="color:red;">Update (Feb 6).</b> <a href="http://www.cse.chalmers.se/~richajo/dit866/data/a2a_train_round1.tsv">Here</a> is the training data (6,955 instances) after the first annotation round.
+</p>
+
+<p>
+<b style="color:red;">Update (Feb 12)</b> <a href="http://www.cse.chalmers.se/~richajo/dit866/data/a2a_train_final.tsv">Here</a> is the final training data (13,520 instances) after the second annotation round, and combined with last year's training data. 
+</p>
+  
+<p>
+After the second round of annotation has been carried out, we will distribute the data once again, including the annotations from all the annotators. Here is an example of how this will look. As you can see, the different annotations are separated by a slash (/). In some cases, as in the last example below, annotators may disagree.
+</p>
+
+<pre>0/0       Brexit is a hoax, based on lies.
+1/1/1     Brexit ain't broken, we're leaving in March. If we don't then democracy will be broken.
+0/0       I voted to remain... because I'm NOT a racist.
+1/0       Just leave, we don't want uk in eu
+</pre>
+
+<!--<b>
+  Update (Jan 30): <a href="data/a2_first_sample.tsv">here</a> is a sample of the training data. The result of the first round of annotation will be published on February 5.
+</b>-->
+<!--<p>
+<b>
+  Update (Feb 5): <a href="data/a2_train.tsv">here</a> is the final training set.
+</b>
+</p>-->
+<!--<p>
+<b>
+  Update (Feb 10): <a href="data/a2_train_final.tsv">here</a> is the full dataset, including the result of the second round of annotation.
+</b>
+</p>-->
+
+<p>
+There will also be a separate <b>test set</b>.
+We will withhold the test set for now, and it will be released a few days before the submission deadline. As usual, the development of your system should not use the test set in any way, and you should only compute the test-set score after finalizing your system.
+<!--solution, we will send back your evaluation score on the test set.
+The students responsible for the highest test set score will be awarded a small prize.-->
+</p>
+  
+<!--<p>
+<b>Reading the comments.</b>
+</p>
+
+<p>
+The function <code>tokenize</code> defined below can be used (optionally) to split
+a text into a list of <em>tokens</em>: words, numbers, groups of
+punctuation, URLs, hashtags, and usernames.
+</p>
+
+<pre>
+tokenize_re = re.compile(r'''
+                         \d+[:\.]\d+
+                         |(https?://)?(\w+\.)(\w{2,})+([\w/]+)
+                         |[@\#]?\w+(?:[-']\w+)*
+                         |[^a-zA-Z0-9 ]+''',
+                         re.VERBOSE)
+
+def tokenize(text):
+    return [ m.group() for m in tokenize_re.finditer(text) ]
+</pre>
+
+<p>
+<b>Processing features. Adding new features.</b>
+</p>
+
+<p>
+You might want to apply various kinds of normalization of the
+tokens to make your feature representation more robust. For instance,
+maybe it's better to convert all words to lowercase?
+Maybe you think that some useless features can be removed directly?
+</p>
+
+<p>
+Optionally, you may try to add some features from external
+sources. Here are a couple of ideas:
+</p>
+
+<p>
+  (1)
+  In text processing for social media, it can be useful to try to make
+  the features robust to variations in spelling.
+  One approach is to apply <em>word clustering</em>, which
+  finds groups of words that exhibit similar statistical properties.
+  <a href="http://www.cs.cmu.edu/~ark/TweetNLP/clusters/50mpaths2">Here</a>
+is a file containing word clusters computed using a very large set of tweets.
+The clusters were computed by Olutobi Owoputi and colleagues at Carnegie Mellon
+University, see the project page <a href="http://www.cs.cmu.edu/~ark/TweetNLP/">here</a>.
+To give you an impression, the cluster <code>1111100100110</code>
+  contains negatively loaded words such as <em>horrible</em>
+  and <em>terrible</em>, including several common misspellings, e.g. <em>embaressing</em>.
+</p>
+
+<p>
+  (2)
+You may try to create features based on <em>sentiment lexicons</em>.
+For instance, <a href="http://saifmohammad.com">Saif Mohammad</a> has created a lexicon
+  specifically designed for Twitter, which you can download <a href="http://saifmohammad.com/WebDocs/lexiconstoreleaseonsclpage/SemEval2015-English-Twitter-Lexicon.zip">here</a>.
+For instance, in this lexicon the word <em>woooohoooo</em> is listed
+  with the value 0.875, which means that it expresses a positive
+  emotion; the hashtag <code>#makesmesick</code> on the other hand is
+  listed with a negative value.
+  Another alternative might
+  be <a href="http://sentiwordnet.isti.cnr.it/">SentiWordNet</a>,
+  which also lists numerical values representing emotional values. In
+  both cases, you may need to decide what to do about the numbers if
+  you'd like to use them to create features.
+</p>
+
+<p>
+If you wonder about the formats of the cluster file or the sentiment
+lexicon, please ask the lab assistant.
+</p>-->
+
+&nbsp;
+<hr>
+&nbsp;
+  
+
+</body></html>

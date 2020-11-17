@@ -1,0 +1,478 @@
+
+<!-- saved from url=(0052)http://www.cse.chalmers.se/~richajo/dit866/pa2b.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Programming assignment 2B: Implementing linear classifiers</title>
+    <link rel="stylesheet" type="text/css" href="./Programming assignment 2B_ Implementing linear classifiers_files/assignments.css">
+  </head>
+
+  <body>
+    <h1>Programming assignment 2B: Implementing linear classifiers</h1>
+
+    <!--<p>
+      <b style="color:red;">NB: this text is preliminary and may be updated.</b>
+    </p>-->
+      
+    <p>
+      In this assignment, you will implement two algorithms to train 
+      classifiers: support vector classification and logistic regression. The pedagogical objectives of this assignment
+      are that you should (1) get some experience of the practical
+      considerations of implementing machine learning algorithms,
+      (2) understand SVC and LR more thoroughly, and 
+      (3) get a taste of how a typical academic paper in
+      machine learning looks.</p>
+
+<p>
+    In addition to the basic implementation of SVC and LR, there are a number of <em>bonus tasks</em> that let you extend the basic implementations in different ways. You need to solve at least one of these tasks to get the highest grade (5/VG).
+    </p>
+
+    <p>
+Work in a group of two or three people.
+Write Python code to implement the algorithms.
+Please use the <a href="https://chalmers.instructure.com/courses/8685/assignments/12886">Canvas page</a> to submit your solution.
+    </p>
+
+<p>
+This assignment does not require the submission of an extensive report.
+In addition to the code, you can submit a document that includes the following information:
+    </p>
+<ul>
+<li>The names of the people in the group.</li>
+<li>Your answer to the exercise question.</li>
+<li>The accuracies you get for the SVC and LR classifiers, or any other classifiers you've implemented.</li>
+<li>Any information needed to run the code.</li>
+<li>Any clarification of steps in your code that could be hard to understand for someone who didn't write that code.</li>
+<li>Any other topic you'd like to discuss.</li>
+</ul>
+<p>
+  You can choose between (1) submitting the Python code and the short report separately, or (2) submitting a single Jupyter notebook including your code and comments.
+</p>
+
+<p><b>Deadline: February 26</b></p>
+    
+    <h2>Preliminaries</h2>
+
+    <p>
+      If necessary, repeat the material from the lectures on
+      <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l4/l4_1.pdf">linear classifiers</a>, <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l5/l5_1.pdf">gradient descent optimization</a>, and the <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l5/l5_2.pdf">the SVC and LR classifiers</a>.
+    </p>
+
+    <p>
+      In this assignment, we'll implement the algorithm described in the paper <a href="http://www.cs.huji.ac.il/~shais/papers/ShalevSiSrCo10.pdf">Pegasos: Primal Estimated sub-GrAdient SOlver for SVM</a>,
+      Shalev-Shwartz et al. (2010). 
+    The algorithm we'll implement is described in pseudocode in
+      Figure 1 in the paper.
+
+      <!--
+      You're free to skip the mathematical details, but please
+      read the introduction and make sure you understand the
+      pseudocode in Figure 1, which is what you will implement in this
+      assignment.-->
+    <!--Here are some clarifications about the pseudocode:</p>
+    <ul>
+      <li>The authors use angle brackets for dot products: &lt;w,
+      x&gt; means w&middot;x</li>
+      <li><i>S</i> is the training set and |<i>S</i>| is
+      the <b>size</b> of the training set.</li>
+      <li><i>T</i> is the number of steps in the algorithm. (This is
+      a bit different from our perceptron, where we specified the
+      number of times to process the whole training set.)</li>
+      <li>&lambda; is a <b>regularization</b> parameter that controls
+      the tradeoff between keeping the classifier simple (i.e. the
+      weights small) and fitting the training set. See slide 17 in
+      the lecture.</li>
+      <li>The optional line is there for theoretical reasons and can
+      be ignored.</li>
+    </ul>-->
+
+    </p><p>
+      In addition to the paper, you can take a look at
+      a <a href="http://www.cse.chalmers.se/~richajo/dit866/files/pa2b_clarification.pdf">separate document</a> that
+      spells out the details a bit more clearly, and uses a notation more
+      similar to what we have seen previously in the course.
+      Make sure that you understand the pseudocode in Algorithm 1, which corresponds to Figure 1 in the original paper.
+    </p>
+
+<h2>Exercise question</h2>
+
+<p>We are developing a simple system to predict the weather based on
+  our location and the season. Here is a training set.
+</p>
+
+<pre>City:      Month:    | Weather:
+--------------------------------
+Gothenburg July      | rain
+Gothenburg December  | rain
+Paris      July      | sun
+Paris      December  | rain
+</pre>
+
+<p>
+We build the system by training a perceptron from
+scikit-learn on this training set. We then test the 
+classifier on the same set. As expected, the classifier correctly
+classifies all the instances in this set; after all, it's the same set
+we used to train it, so it seems that classifier has "memorized" the training set.
+</p>
+
+<p>
+Now, we repeat this experiment using another training set. We train
+the classifier using the following examples, and again we evaluate it using
+the same examples we used to train it.
+</p>
+
+<pre>City:      Month:    | Weather:
+--------------------------------
+Sydney     July      | rain
+Sydney     December  | sun
+Paris      July      | sun
+Paris      December  | rain
+</pre>
+
+<p>When we use this set, for some strange reason our classifier
+  performs poorly! We can't improve it by switching to a LinearSVC. Do you
+  have an idea what's going on? Why could the classifier "memorize" the training data in the first case, but not in the second case?</p>
+
+<p><a href="http://www.cse.chalmers.se/~richajo/dit866/files/weather.py">Here</a> is the Python code if you want to try the
+  experiment yourself.</p>
+
+<h2>Introduction</h2>
+
+    <p>
+Download and unpack <a href="http://www.cse.chalmers.se/~richajo/dit866/files/pa2b.zip">this zip file</a>. 
+The package contains the perceptron code presented during
+the third lecture (<code>aml_perceptron.py</code>).
+(To be precise, this is the compact formulation of the perceptron that
+we saw
+in <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l6/l6.pdf">Lecture
+	6</a>, slide 5.)
+Take a look at the class <code>Perceptron</code> and make sure that
+you understand how the Python code corresponds to the pseudocode in
+the lecture.
+</p>
+
+<p>
+The package also contains a Python program
+(<code>doc_classification.py</code>) 
+that carries out an experiment in document classification.
+This is the same file that we used in one of the demonstrations in Lecture 2.
+The task
+here is to determine whether a product review is positive or
+negative. <!--(There is no neutral class in this task.)-->
+The program trains a classifier using our perceptron implementation,
+and then evaluates the classifier on a test set.
+</p><p>
+
+</p><p>Run the experiment code and make sure it works on your
+  machine. Training should take at most a few seconds, and the accuracy
+  should be about 0.80.</p>
+
+<!--<p><b>Hint 1.</b>The perceptrons with the dense vectors might cause some
+  memory problems on some machines. In case this happens, reduce the
+  number of features as described in the code.)</p>-->
+
+<!--<p><b>Hint 2.</b>
+If you're using Python 2, please remove the
+  argument <code>encoding</code> when opening the file.
+</p>-->
+
+<h2>Your tasks</h2>
+
+<h3>Implementing the SVC</h3>
+
+<p>
+Implement the Pegasos algorithm for training support vector
+classifiers by converting the 
+pseudocode in Algorithm 1 in the clarification document (Figure 1 in the original Pegasos paper) into proper Python. 
+Test your implementation by using your own classifier
+instead of the perceptron in <code>doc_clasification.py</code>. 
+It's probably easiest if you start from the existing code, for
+instance by making a copy of the class <code>Perceptron</code>, and
+then just modify it to implement Algorithm 1.
+</p>
+
+<p>
+To solve this task you just have to convert the pseudocode into Python code, but it can be good to try to understand why the algorithm looks as it does. Section 2 in the clarification paper goes through the steps. Understanding this may also make it a bit easier to understand what parts to change when you implement logistic regression (see below).
+</p>
+  
+<p>
+You can try to find a good values for the regularization parameter
+&#955; and the number of training steps. (That is, either the number
+of iterations through the training set, or the number of randomly
+selected training instances if you follow the paper's pseudocode more
+precisely.) 
+For instance, 
+In my experiments, I iterated 10 times through
+the training set and set
+&#955; to 1/<em>N</em>, where <em>N</em> is the number of instances in
+training set.
+<!--, which gave a classification accuracy that was
+slightly higher than that of the perceptron.-->
+</p>
+
+<p>
+<b>Sanity check:</b> Your accuracy may vary depending on how you
+choose to implement the algorithm, but if the accuracy is less than
+0.80 you have probably made some mistake.
+</p>
+     
+<h3>Logistic regression</h3>
+
+<p>As we saw in the lecture, the logistic regression classifier is
+  baed on an objective function that looks almost like the one used by
+  the SVC. The difference is just in which <b>loss
+  function</b> is used: the SVC uses the <b>hinge loss</b> and LR
+  the <b>log loss</b>.</p>
+
+<p>
+Read through the explanation of the log loss and its gradient in
+      section 3 in the clarification document.
+Or take a look at the table on page 15 in the Pegasos paper:
+the
+first line shows the hinge loss and its gradient,<sup>[<a href="http://www.cse.chalmers.se/~richajo/dit866/pa2b.html#foot1">1</a>]</sup> and the
+      second line shows the log loss and the corresponding gradient.
+    </p>
+
+<p>
+Code a new training algorithm that uses the log loss instead of the hinge loss.
+  See how well it works compared to your previous classifier. 
+</p>
+
+<p>
+  &nbsp;
+</p>
+
+<h3>Optional task: Printing the value of the objective function</h3>
+
+<p>
+Add some code to print approximate values of the SVM or LR objective
+  function while training.
+For instance, if your code uses "epochs" (iterations through
+  the training set), it seems natural to print the objective after each epoch.
+(Otherwise, you might print the objective value every 1,000 or 10,000
+  instances or so.)
+Recall that the objective is equal to the mean of the loss function
+over the whole training set, plus a regularizer term.
+So each time you process one training instance, you might compute the
+  loss function as well, and add it to the sum of loss values.
+<!--(This is actually not the exact value of the objective but an
+  approximation, since you have been updating the model after every
+  training instance.)-->
+</p>
+
+<p>
+  &nbsp;
+</p>
+
+<h2>Bonus tasks</h2>
+
+<p>
+<b>To receive the high grade (5 or VG), it is required that you solve at least one of the following tasks. Please note that each of the bonus tasks has a number of subtasks that need to be solved.</b>
+</p>
+
+<h3>Bonus task 1. Making your code more efficient</h3>
+
+<p>
+We kept things simple for now, but there are some ways we can make the training algorithms run faster. Try out the three approaches described below, and see if you can improve the speed. These speedups should not affect what is being computed, so you should get <em>the same</em> results with and without the speed improvements.
+</p>
+  
+<p>
+<b>(a) Faster linear algebra operations</b>
+</p>
+
+<p>
+  The bottlenecks in the code are the linear algebra operations: computing the dot product, scaling the weight vector, and adding the feature vector to the weight vector.  
+</p>
+
+<p>
+Try to speed up your code by using BLAS functions, which are available in <a href="https://docs.scipy.org/doc/scipy/reference/linalg.blas.html"><code>scipy.linalg.blas</code></a>. (For general information about BLAS, see the <a href="https://en.wikipedia.org/wiki/Basic_Linear_Algebra_Subprograms">Wikipedia entry</a>.) These functions are more efficient than normal NumPy linear algebra operations, because they avoid a number of safety checks carried out by NumPy. (The lack of these checks may cause Python to crash if you use the BLAS functions incorrectly.) The following three BLAS functions may be useful:
+</p>
+
+<ul>
+  <li>if <code>x</code> and <code>y</code> are NumPy 1-dimensional arrays, then <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.blas.ddot.html"><code>ddot(x, y)</code></a> is equivalent to <code>x.dot(y)</code></li>
+  <li>if <code>x</code> is a NumPy 1-dimensional array and <code>a</code> a number, then <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.blas.dscal.html"><code>dscal(a, x)</code></a> is equivalent to <code>x *= a</code></li>
+  <li> if <code>x</code> and <code>y</code> are NumPy 1-dimensional arrays, and <code>a</code> a number, then <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.blas.daxpy.html"><code>daxpy(x, y, a=a)</code></a> is equivalent to <code>y += a*x</code></li>
+</ul>
+
+<p>
+<b>(b) Using sparse vectors</b>
+</p>
+
+<p>
+Remove the <code>SelectKBest</code> step from the pipeline and check
+the difference in training time. (This will change your accuracy a bit.) You may also add the option <code>ngram_range=(1,2)</code> to the <code>TfidfVectorizer</code> and see what happens.
+</p>
+
+<p>
+Our implementation is slow and wasteful in terms of memory if we use a
+large set of features. With sparse vectors, this can be improved. Follow the example of <code>SparsePerceptron</code> in the example code and implement sparse versions of the SVC and LR algorithms.
+</p>
+
+<p><b>Hint</b>. The helper function <code>sparse_dense_dot(x, w)</code> is used to carry out a dot product between a sparse vector <code>x</code> and a dense vector <code>w</code>, while <code>add_sparse_to_dense(x, w, xw)</code> is the counterpart of the operation 
+<code>w += xw * x</code>.
+</p>
+
+<p>
+<b>(c) Speeding up the scaling operation</b>
+</p>
+
+<p>At some places in the pseudocode, the whole weight vector is scaled
+  by some factor. This can be a slow operation if our training
+  set consists of high-dimensional, sparse vectors.
+  Read section 4 in the clarification
+  document, or section 2.4 in the original Pegasos paper, about a
+  trick for speeding up the scaling 
+  operation. Modify your implementation so that it uses this
+  trick and check if you can improve the training time.</p>
+
+<p>
+  &nbsp;
+</p>
+
+<h3>Bonus task 2. Multiclass classification</h3>
+
+<p>
+We will see how we can make your classifiers work in a situation where we have more than two possible output classes.      
+</p>
+
+<p>
+Change the <code>read_data</code> function so that it uses the <em>first</em> column instead of the second column in the review file. The first column represents the type of product that is reviewed. There are six categories here: books, cameras, DVDs, health products, music and software.
+</p>
+
+<!--<p>
+Scikit-learn's built-in classifiers work in a multiclass setup without any modifications. As a sanity check, you may try one of them and     
+</p>-->
+    
+<p>
+<b>(a) Binarizing the multiclass problem</b>
+</p>
+
+<p>
+  Scikit-learn contains two utility classes that can help you convert multiclass classification tasks into a set of binary tasks:
+  <a href="https://scikit-learn.org/stable/modules/generated/sklearn.multiclass.OneVsRestClassifier.html"><code>OneVsRestClassifier</code></a> and
+  <a href="https://scikit-learn.org/stable/modules/generated/sklearn.multiclass.OneVsOneClassifier.html"><code>OneVsOneClassifier</code></a>. They correspond to what we called "long jump" and "football league" in <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l5/l5_2.pdf">the lecture</a> (slide 27).
+</p>
+
+<p>
+Make sure that your previous classifiers can be used with the utilities mentioned above. If your classifier works correctly, you should get an accuracy of about 0.90 or a bit more.
+</p>
+
+<p>
+<b>(b) Natively multiclass learning algorithms</b>
+</p>
+
+<p>
+Consider the last two rows in the table on page 15 in the <a href="http://www.cs.huji.ac.il/~shais/papers/ShalevSiSrCo10.pdf">Pegasos paper</a>.
+</p>
+
+<p>
+Row four corresponds to a multiclass SVM. This loss function is called the multiclass hinge loss and was introduced by Crammer and Singer. (See the <a href="https://en.wikipedia.org/wiki/Hinge_loss">Wikipedia article on the hinge loss</a>, under <em>Extensions</em>.)
+</p>
+
+<p>
+Row five corresponds to multiclass logistic regression. The loss function is equivalent to the cross-entropy loss that we covered in <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l5/l5_2.pdf">the lecture</a> (slide 35), just written in a more clumsy way than in the lecture.
+</p>
+
+<p>
+<b>Your task:</b> implement multiclass SVM and LR. As usual, the gradients you need are in the right column in the table.
+</p>
+  
+<p>
+<b>Hints</b>:
+</p>
+<ul>
+  <li>Instead of a single weight vector <em>w</em>, you probably need a matrix, or several different vectors.</li>
+  <li>&#948; is a misclassification penalty. Here, we can say that it is 0 if the labels are identical, and 1 otherwise.</li>
+  <li>In the LR model, you will need to compute the <em><a href="https://en.wikipedia.org/wiki/Softmax_function">softmax</a></em>. You may use <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.softmax.html"><code>scipy.special.softmax</code></a>; otherwise, make sure you don't get a numerical overflow.</li>
+  <li>How we interpret the notation &#981;<em>(x, y)</em> depends on how you store your weights. If you have a weight matrix, then &#981;<em>(x, y)</em> means a feature vector <em>x</em> at the part of the matrix corresponding to the class <em>y</em>.
+  </li>
+</ul>
+  
+<p>
+  &nbsp;
+</p>
+
+<h3>Bonus task 3. Additional loss functions</h3>
+
+<p>(This bonus task probably requires that you have taken a calculus course at some point.)</p>
+
+    <p>
+      Derive the gradients of the loss functions described below, and plug them into the Pegasos algorithm. What is the result?
+    </p>
+
+<p>
+<b>(a) Variants of the hinge loss</b>
+</p>
+
+    <p>
+Look at <a href="https://en.wikipedia.org/wiki/Hinge_loss">Wikipedia's article about the hinge loss</a>, and read about the <em>smoothed</em> hinge loss functions (in the section <em>Optimization</em>).
+They discuss a couple of different variants, but note that the first (Rennie &amp; Srebro) is a special case of the second if you set &#947; to 1.
+These loss functions do not have the "kink" at 1 that the normal hinge loss has, which means that their gradients are continuous everywhere.
+    </p>
+
+<p>
+<b>(b) Probit regression</b>
+</p>
+    
+<p>
+The <a href="https://en.wikipedia.org/wiki/Probit_model">probit model</a>, introduced by Bliss in 1934, is a binary classifier that produces a probabilistic output.
+However, instead of using the logistic function as in logistic regression, the probit model applies the formula
+</p>
+<img src="./Programming assignment 2B_ Implementing linear classifiers_files/probit.png">
+<p>
+where &#934; is the cumulative distribution function of the normal distribution.
+Use the negative log of this as a loss function.
+<b>Hint</b>: this cdf can be computed using <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.norm.html"><code>scipy.stats.norm.cdf</code></a> or <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.erf.html#scipy.special.erf"><code>scipy.special.erf</code></a> (after some rescaling; see the documentation of <code>erf</code>). The latter option is probably slightly more efficient computationally.
+</p>
+  
+<p>
+  &nbsp;
+</p>
+
+<h3>Bonus task 4. Reimplementing the models in PyTorch</h3>
+
+<p>
+Instead of hand-coding your own stochastic gradient descent implementation,
+rewrite the logistic regression and support vector classifiers using PyTorch.
+</p>
+
+<p>
+As a starting point, you may use the following <a href="http://www.cse.chalmers.se/~richajo/dit866/backup_2019/lectures/l5/PyTorch%20linear%20regression%20demo.html">PyTorch example for least-squares linear regression</a> (<a href="http://www.cse.chalmers.se/~richajo/dit866/backup_2019/lectures/l5/PyTorch%20linear%20regression%20demo.ipynb">notebook</a>). The API of the PyTorch library is described <a href="https://pytorch.org/docs/stable/torch.html">here</a>.
+</p>
+
+<p>
+Note that this solution will <em>not</em> use the Pegasos approach to decreasing the learning rate: instead, you will have to try out various options to optimization. 
+It can be interesting to explore options beyond just using the simple <a href="https://pytorch.org/docs/stable/optim.html#torch.optim.SGD">SGD</a>.
+For instance, you may experiment with the <code>momentum</code> parameter in SGD, or try alternative optimization approaches such as 
+<a href="https://pytorch.org/docs/stable/optim.html#torch.optim.RMSprop">RMSProp</a>, <a href="https://pytorch.org/docs/stable/optim.html#torch.optim.Adagrad">Adagrad</a> or <a href="https://pytorch.org/docs/stable/optim.html#torch.optim.Adam">Adam</a>.
+</p>
+
+<p>
+Optionally, you may write a new subclass of <a href="https://pytorch.org/docs/stable/optim.html#torch.optim.Optimizer"><code>Optimizer</code></a> that implements the decreasing learning rate approach used in Pegasos.
+</p>
+
+<p>
+In this task, it is probably hard to understand what is going on unless you print the value of the objective function. Don't care too much about the accuracy: the interesting part here is how low you can squeeze the objective, and how fast you can get near the minimum.
+</p>
+  
+<p>
+  &nbsp;
+</p>
+
+<hr>
+
+<!--<p id="footnote">[1]
+If you're using Python 2, please remove the
+  argument <code>encoding</code> when opening the file.
+</p>-->
+
+<p>
+  &nbsp;
+</p>
+
+    <p id="foot1">[<b>1</b>] To be precise, the hinge loss does not have a gradient at 1. What we have here is strictly speaking a <em>subgradient</em>, not a gradient. For optimization purposes, this difference does not matter for us.
+    </p>
+
+<hr>
+
+
+</body></html>

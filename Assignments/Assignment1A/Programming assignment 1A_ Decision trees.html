@@ -1,0 +1,527 @@
+
+<!-- saved from url=(0052)http://www.cse.chalmers.se/~richajo/dit866/pa1a.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Programming assignment 1A: Decision trees</title>
+    <link rel="stylesheet" type="text/css" href="./Programming assignment 1A_ Decision trees_files/assignments.css">
+
+<style>
+    pre {
+      display:inline-block;
+    }
+</style>    
+
+  <script src="./Programming assignment 1A_ Decision trees_files/jquery.min.js.download"></script><script>
+$(document).ready(function(){
+  $("button.toggler").click(function(){
+    $(this).text(function(i, text){
+          return text === "Show solution" ? "Hide solution" : "Show solution";
+      });
+    $(this).next().toggle(100);
+  });
+});
+</script></head>
+
+  
+
+
+<body>
+    <h1>Programming assignment 1A: introductory tour and decision trees</h1>
+
+    <p>
+      In this assignment,
+      you will take a quick guided tour of the scikit-learn library,
+      one of the most widely used machine learning libraries in Python.
+      We will particularly focus on decision tree learning for classification and regression.
+    </p>
+
+<p>
+  Work in groups of two or three and solve the tasks described below.
+Even though most of the code is given, try to understand what is going on in all the steps. Ask the lab assistant if you are confused about anything.
+</p>
+
+<p>
+There are three compulsory tasks of the assignment, where the main focus is on using scikit-learn for training and evaluating machine learning models.
+There is a fourth part where the focus is on implementing a decision tree model for regression.
+The fourth task is optional, but <b>to get a score higher than the minimal score for passing, you need to solve the fourth part at least partly.</b>
+</p>
+
+<p>
+  Write a brief report containing your answers to the questions below, including figures when necessary, and then submit the report and Python code. Alternatively, write a Jupyter notebook including your code, plots, and comments.
+  Submit your solution <a href="https://chalmers.instructure.com/courses/8685/assignments/12233">through the Canvas website</a>.
+</p>
+
+<p>
+<b>Deadline: January 29</b>
+</p>
+
+<p>
+Didactic purpose of this assignment:
+</p>
+<ul>
+  <li>getting a feel for the workflow of machine learning in Python;
+  </li><li>understanding decision tree learning algorithms for classification and regression;
+  </li><li>introducing the notions of overfitting and underfitting.
+</li></ul>
+
+<h3>References</h3>
+
+<ul>
+<!--  <li>In <a href="https://nordunet.instructure.com/courses/507/files/23537/download">Lecture 1</a>, we saw how to plot histograms and compute basic descriptive statistics [<a href="https://nordunet.instructure.com/courses/507/files/23544/download">notebook</a>], and simulate some simple random processes [<a href="https://nordunet.instructure.com/courses/507/files/23547/download">notebook</a>].
+<li><a href="http://matplotlib.org/api/pyplot_api.html">Matplotlib reference documentation</a>.-->
+<li><a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l1/l1.pdf">Lecture 1</a> on the basic steps of machine learning, and decision tree learning.
+</li><li><a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l1/decision_trees.pdf">Extra reading material</a> on decision trees.
+</li><li><a href="http://scikit-learn.org/stable/documentation.html">scikit-learn documentation</a>.
+</li><li><a href="http://pandas.pydata.org/pandas-docs/stable/index.html">Pandas reference documentation</a>.
+</li></ul>
+
+<h3>Task 0: Making sure that you have a running scikit-learn installation</h3>
+
+<p>
+The scikit-learn library is <b>not</b> installed on the lab machines
+by default. You will have to install it on your own machine or in your
+home directory on the lab machine.
+</p>
+
+<p>
+If you're new to Python, we recommend that you use
+the <a href="https://www.anaconda.com/download/#linux">Anaconda</a>
+Python distribution, which includes scikit-learn and several other
+useful libraries.
+<!--Alternatively, you can
+use <a href="https://conda.io/miniconda.html">Miniconda</a>, which
+installs a smaller number of libraries. (If you use Miniconda, you
+need to write <code>conda install scikit-learn</code> after installing.)-->
+</p>
+
+<p>
+If you don't use Anaconda, please refer to the <a href="http://scikit-learn.org/stable/install.html">official installation instructions</a>.
+</p>
+  
+<p>
+After installing, verify your installation by
+    starting <code>python</code> and typing <code>import
+    sklearn</code>. You shouldn't see an error message at this point.
+</p>
+
+<h3>Task 1: A classification example: fetal heart condition diagnosis</h3>
+
+<p>
+The <a href="http://archive.ics.uci.edu/ml/datasets.html">UCI Machine
+    Learning Repository</a> contains several datasets that can be used
+    to investigate different machine learning algorithms.
+In this exercise, we'll use a <a href="https://archive.ics.uci.edu/ml/datasets/Cardiotocography">dataset of fetal heart diagnosis</a>. The dataset contains measurements from about 2,600 fetuses.
+This is a classification task, where our task is to predict
+a diagnosis type following the
+<a href="https://en.wikipedia.org/wiki/Cardiotocography#Updated_2015_FIGO_Intrapartum_Fetal_Monitoring_Guidelines">FIGO Intrapartum Fetal Monitoring Guidelines</a>: <em>normal</em>, <em>suspicious</em>, or <em>pathological</em>.
+</p>
+
+<p>
+<b>Step 1. Reading the data</b>
+</p>
+     
+<p>
+  <a href="http://www.cse.chalmers.se/~richajo/dit866/data/CTG.csv">This file</a>
+  contains the data that we will use.
+This file contains the same data as in <a href="https://archive.ics.uci.edu/ml/datasets/Cardiotocography">the public distribution</a>, except that we converted from Excel to CSV. Download the file and save it in a working directory.
+</p>
+
+<p>
+Open your favorite editor or a <a href="http://jupyter.org/">Jupyter notebook</a>.
+To read the CSV file, it is probably easiest to use the <a href="https://pandas.pydata.org/">Pandas</a> library.
+Here is a code snippet that carries out the relevant steps:
+</p>
+
+<pre>import pandas as pd
+from sklearn.model_selection import train_test_split
+  
+# Read the CSV file.
+data = pd.read_csv(LOCATION_OF_THE_FILE, skiprows=1)
+
+# Select the relevant numerical columns.
+selected_cols = ['LB', 'AC', 'FM', 'UC', 'DL', 'DS', 'DP', 'ASTV', 'MSTV', 'ALTV',
+                 'MLTV', 'Width', 'Min', 'Max', 'Nmax', 'Nzeros', 'Mode', 'Mean',
+                 'Median', 'Variance', 'Tendency', 'NSP']
+data = data[selected_cols].dropna()
+
+# Shuffle the dataset.
+data_shuffled = data.sample(frac=1.0, random_state=0)
+
+# Split into input part X and output part Y.
+X = data_shuffled.drop('NSP', axis=1)
+
+# Map the diagnosis code to a human-readable label.
+def to_label(y):
+    return [None, 'normal', 'suspect', 'pathologic'][(int(y))]
+
+Y = data_shuffled['NSP'].apply(to_label)
+
+# Partition the data into training and test sets.
+Xtrain, Xtest, Ytrain, Ytest = train_test_split(X, Y, test_size=0.2, random_state=0)
+</pre>
+
+<p>
+You can call <code>X.head()</code> to take a peek at the data. The input part consists of 21 numerical features. <a href="https://archive.ics.uci.edu/ml/datasets/Cardiotocography">The official page</a> for the dataset includes brief descriptions of all the features.
+</p>      
+
+<img width="60%" src="./Programming assignment 1A_ Decision trees_files/csv.png">
+
+<p>
+<b>Step 2. Training the baseline classifier</b>
+</p>
+
+<p>
+We can now start to investigate different classifiers. 
+<!--The following code creates a
+scikit-learn <a href="http://scikit-learn.org/stable/modules/generated/sklearn.pipeline.Pipeline.html"><code>Pipeline</code></a> that consists of a 
+<a href="http://scikit-learn.org/stable/modules/generated/sklearn.feature_extraction.DictVectorizer.html"><code>DictVectorizer</code></a> and a 
+classifier.
+All classifiers in scikit-learn operate on numerical data, and the
+purpose <code>DictVectorizer</code> is to convert the symbolic data
+(the features) into numbers.
+-->
+</p>
+
+<p>
+The <a href="http://scikit-learn.org/stable/modules/generated/sklearn.dummy.DummyClassifier.html"><code>DummyClassifier</code></a> 
+is a simple classifier that does not make use of the features: it just
+returns the most common label in the training set, in this
+case <code>Spondylolisthesis</code>.
+The purpose of using such a stupid classifier is as
+a <em>baseline</em>: a simple classifier that we can try before we
+move on to more complex classifiers.
+</p>
+
+<!--from sklearn.pipeline import make_pipeline
+from sklearn.feature_extraction import DictVectorizer
+-->
+
+<pre>from sklearn.dummy import DummyClassifier
+
+clf = DummyClassifier(strategy='most_frequent')
+</pre>
+
+<p>
+To get an idea of how well our simple classifier works, we carry out
+a <a href="https://en.wikipedia.org/wiki/Cross-validation_(statistics)"><b>cross-validation</b></a> over the training set and compute the
+classification accuracy on each fold.
+</p>
+
+<pre>from sklearn.model_selection import cross_val_score
+
+cross_val_score(clf, Xtrain, Ytrain))
+</pre>
+
+<p>
+The result is a NumPy array that contains the accuracies on the
+different folds in the cross-validation.
+</p>   
+
+<b>Step 3. Trying out some different classifiers</b>
+
+<p>
+Replace the <code>DummyClassifier</code> with some more meaningful
+classifier and run the cross-validation again. Try out a few
+classifiers and see how much you can improve the cross-validation accuracy.
+Remember, the accuracy is defined as the proportion of correctly classified instances, and we want this value to be <b>high</b>.
+</p>
+
+<p>
+Here are some possible options:
+</p>
+
+<p>Tree-based classifiers:</p>
+<ul>
+<li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html"><code>sklearn.tree.DecisionTreeClassifier</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html"><code>sklearn.ensemble.RandomForestClassifier</code></a>  
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.GradientBoostingClassifier.html"><code>sklearn.ensemble.GradientBoostingClassifier</code></a>
+</li></ul>
+
+<p>Linear classifiers:</p>
+<ul>
+<li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Perceptron.html"><code>sklearn.linear_model.Perceptron</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html"><code>sklearn.linear_model.LogisticRegression</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html"><code>sklearn.svm.LinearSVC</code></a>
+</li></ul>
+
+<p>Neural network classifier (will take longer time to train):</p>
+<ul>
+<li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPClassifier.html"><code>sklearn.neural_network.MLPClassifier</code></a>
+</li></ul>
+
+<!--<p>
+The linear and neural network classifiers will perform better if you
+add a <a href="http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.StandardScaler.html"><code>sklearn.preprocessing.StandardScaler(with_mean=False)</code></a> to the pipeline,
+after the vectorizer but before the classifier.
+</p>-->
+
+<p>
+You may also try to tune the <b>hyperparameters</b> of the various
+classifiers to improve the performance. For instance, the decision tree classifier has a
+parameter that sets the maximum depth, and in the neural network
+classifier you can control the number of layers and the number of
+neurons in each layer.
+</p>
+  
+<b>Step 4. Final evaluation</b>
+
+<p>
+When you have found a classifier that gives a high accuracy in the
+cross-validation evaluation, train it on the whole training set and
+evaluate it on the held-out test set.
+</p>
+  
+<pre>from sklearn.metrics import accuracy_score
+  
+clf.fit(Xtrain, Ytrain)
+Yguess = clf.predict(Xtest)
+print(accuracy_score(Ytest, Yguess))
+</pre>
+
+<p>
+<b style="color:red;">For the report.</b>
+  In your submitted report, please include a description of the classifier you selected and report its accuracy.
+</p>
+
+<h3>Task 2: Decision trees for classification</h3>
+
+<p>
+  Download <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l1/Lecture%201.ipynb">the code that was shown during the lecture</a> and use the defined class <code>TreeClassifier</code> as your classifier in an experiment similar to those in Task 1.
+(If you don't like to use a notebook, you can copy the code from <a href="http://www.cse.chalmers.se/~richajo/dit866/lectures/l1/Lecture%201.html">this page</a>.)
+  Tune the hyperparameter <code>max_depth</code> to get the best cross-validation performance, and then evaluate the classifier on the test set.
+</p>
+
+<p>
+<b style="color:red;">For the report.</b>
+  In your submitted report, please mention what value of <code>max_depth</code> you selected and what accuracy you got.
+</p>
+
+<p>
+For illustration, let's also draw a tree. Set <code>max_depth</code> to a reasonably small value (not necessarily the one you selected above) and then call <code>draw_tree</code> to visualize the learned decision tree. Include this tree in your report.
+</p>
+ 
+
+<h3>Task 3: A regression example: predicting apartment prices</h3>
+
+<p>
+<a href="http://www.cse.chalmers.se/~richajo/dit866/data/sberbank.csv">Here</a>
+is another dataset.
+<!--<sup><a href="#note1">1</a></sup>-->
+This dataset was created by Sberbank and contains some statistics from the Russian real estate market. <a href="https://www.kaggle.com/c/sberbank-russian-housing-market/overview">Here</a> is the Kaggle page where you can find the original data.
+</p>
+
+<p>
+Since we will just be able to handle numerical features and not symbolic ones, we'll need with a simplified version of the dataset. So we'll just select 9 of the columns in the dataset.
+The goal is to predict the price of an apartment, given numerical information such as the number of rooms, the size of the apartment in square meters, the floor, etc.
+Our approach will be similar to what we did in the classification
+example: load the data, find a suitable model using cross-validation
+over the training set, and finally evaluate on the held-out test data.
+</p>
+
+<p>
+  The following code snippet will carry out the basic reading and preprocessing of the data.
+</p>
+  
+<pre># Read the CSV file using Pandas.
+alldata = pd.read_csv(LOCATION_OF_YOUR_FILE)
+
+# Convert the timestamp string to an integer representing the year.
+def get_year(timestamp):
+    return int(timestamp[:4])
+alldata['year'] = alldata.timestamp.apply(get_year)
+
+# Select the 9 input columns and the output column.
+selected_columns = ['price_doc', 'year', 'full_sq', 'life_sq', 'floor', 'num_room', 'kitch_sq', 'full_all']
+alldata = alldata[selected_columns]
+alldata = alldata.dropna()
+
+# Shuffle.
+alldata_shuffled = alldata.sample(frac=1.0, random_state=0)
+
+# Separate the input and output columns.
+X = alldata_shuffled.drop('price_doc', axis=1)
+# For the output, we'll use the log of the sales price.
+Y = alldata_shuffled['price_doc'].apply(np.log)
+
+# Split into training and test sets.
+Xtrain, Xtest, Ytrain, Ytest = train_test_split(X, Y, test_size=0.2, random_state=0)
+</pre>
+
+<p>
+We train a baseline dummy regressor (which always predicts the same value) and evaluate it in a cross-validation
+setting.</p>
+
+<p>
+This example looks quite similar to the classification example above. The main differences are (a) that we are predicting numerical values, not symbolic values; (b) that we are evaluating using the <em>mean squared error</em> metric, not the accuracy metric that we used to evaluate the classifiers.
+</p>
+
+<pre>from sklearn.dummy import DummyRegressor
+from sklearn.model_selection import cross_validate
+m1 = DummyRegressor()
+cross_validate(m1, Xtrain, Ytrain, scoring='neg_mean_squared_error')
+</pre>
+
+<p>
+Replace the dummy regressor with something more meaningful and
+iterate until you cannot improve the performance.
+<!--This time, we're evaluating using mean squared error, which means that we want the score to be <b>low</b>.-->
+Please note that the <code>cross_validate</code> function returns the <em>negative</em> mean squared error.
+</p>
+
+<p>
+Some possible
+regression models that you can try:
+</p>
+
+<ul>
+<li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html"><code>sklearn.linear_model.LinearRegression</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Ridge.html"><code>sklearn.linear_model.Ridge</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.Lasso.html"><code>sklearn.linear_model.Lasso</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeRegressor.html"><code>sklearn.tree.DecisionTreeRegressor</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html"><code>sklearn.ensemble.RandomForestRegressor</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html"><code>sklearn.ensemble.GradientBoostingRegressor</code></a>
+</li><li><a href="http://scikit-learn.org/stable/modules/generated/sklearn.neural_network.MLPRegressor.html"><code>sklearn.neural_network.MLPRegressor</code></a>
+</li></ul>
+
+<!--<p>
+Again, some of the models may work better if you put
+a <code>StandardScaler</code> in the pipeline before the regressor.
+</p>-->      
+
+<p>
+Finally, train on the full training set and evaluate on the held-out test set:
+</p>
+
+<pre>from sklearn.metrics import mean_squared_error
+  
+regr.fit(Xtrain, Ytrain)
+mean_squared_error(Ytest, regr.predict(Xtest))
+</pre>
+
+<p>
+<b style="color:red;">For the report.</b>
+  In your submitted report, please include a description of the regression model you selected and report its evaluation score.
+</p>
+
+<h3>Task 4: Decision trees for regression <b style="color:red;">(optional for a high grade)</b></h3>
+
+<p>
+For the final task, we'll implement a class <code>TreeRegressor</code> for regression with decision trees.
+</p>
+
+<p>  
+Before you start, make sure that you understand the implementation of the class <code>TreeClassifier</code>.
+</p>
+
+
+
+<p>
+<b>Step 1. Implementing the regression model</b>
+</p>
+
+<p>
+It is probably a good idea to structure this in a similar way to the <code>TreeClassifier</code>, just adapted for regression instead.
+This means that you should probably write a new subclass that inherits from the same abstract superclass <code>DecisionTree</code> that the classifier used. Probably it's a good idea to replace <code>ClassifierMixin</code> with <code>RegressorMixin</code> (this just replaces the default type of evaluation metric).
+</p>
+
+<p>
+In your regressor subclass, implement the same methods that you can see in <code>TreeClassifier</code>. In particular, you'll need to define:
+</p>
+
+<ul>
+<li>what it means for a set of output values to be "homogeneous": instead of checking whether all values are identical, you should probably compare the variance to a threshold. The NumPy function <code>np.var</code> is probably useful here.
+</li><li>how to compute the default output value: you should return the mean instead of the most common value. Here, you can use <code>np.mean</code>.
+</li><li>how to select split that leads to the most homogeneous subsets.
+</li></ul>
+
+<p>
+  The third of these items is the most challenging. In the cases of regression,
+  we use the variance of a set of values to measure its homogeneity. The homogeneity criterion most typically used in decision tree regression (including scikit-learn's implementation) is the following, called "variance reduction":
+</p>
+  
+&nbsp;
+<img width="33%" src="./Programming assignment 1A_ Decision trees_files/var_red.svg">
+&nbsp;
+
+<p>
+Here, <em>V(S)</em> means the variance of the full set of values,
+<em>V(S<sub>H</sub>)</em> means the variance of the higher part,
+<em>n<sub>H</sub></em> means the size of the higher part, etc.
+</p>
+
+<p>
+To implement this splitting function, you can get some inspiration from the corresponding function for the classifier. The basic structure will be very similar. But instead of counting the number of instances of each class (using the <code>Counter</code>), you'll have to compute variances instead.
+</p>      
+
+<p>
+<b>Hint.</b> Computing the variances from scratch at each possible threshold, for instance by calling <code>np.var</code>, will be too time-consuming. It's better to rely on the formula
+</p>
+
+<img width="28%" src="./Programming assignment 1A_ Decision trees_files/var_formula.svg">
+  
+<p>
+When you go through the possible thresholds, keep track of the sum and sum of squares for the lower and upper sets of values.
+</p>
+
+<p>
+<b>Step 2. Sanity check</b>
+</p>
+
+<p>
+The following function will generate a small number of training examples for a simple regression task with one input variable.
+</p>
+  
+<pre>def make_some_data(n):
+    x = np.random.uniform(-5, 5, size=n)
+    Y = (x &gt; 1) + 0.1*np.random.normal(size=n)
+    X = x.reshape(n, 1) # X needs to be a 2-dimensional matrix
+    return X, Y
+</pre>
+
+<p>
+If we generate such a dataset and plot it, the result will look something like the figure below. The <em>x</em> axis represents the input and the <em>y</em> axis the output.
+</p>
+  
+<img width="33%" src="./Programming assignment 1A_ Decision trees_files/sanitycheck.png">
+
+<p>
+<b style="color:red;">For the report.</b>
+If you consider the data-generating function, what kind of decision tree would we want to describe this data?
+</p>
+
+<p>
+Train your decision tree regressor algorithm on a small dataset generated by the function above, and then draw the tree. Select the tree depth according to your common sense. Does the result make sense? What happens if we allow the tree depth to be a large number?
+</p>
+
+<p>
+<b>Step 3. Predicting apartment prices using decision tree regression</b>
+</p>
+
+<p>
+Train and evaluate a decision tree regression model for the Russian apartment price prediction example.
+</p>
+
+<p>
+<b style="color:red;">For the report.</b>
+  In your submitted report, please describe what tree depth you used and the evaluation score you got on the test set.
+</p>
+
+<p>
+<b>Step 4. Underfitting and overfitting</b>
+</p>
+
+<p>
+For the apartment price prediction task, draw a plot that shows the evaluation score on the <em>training set</em> and on the <em>test set</em> for different values of <code>max_depth</code>, ranging from 0 to 12. (It's probably easiest if you implement a function to draw this plot, but it's also OK if you draw the plot by hand.)
+</p>
+
+<p>
+<b style="color:red;">For the report.</b>
+Please include this plot in the report, and comment on the differences between the two curves.
+</p>
+
+&nbsp;
+<hr>
+&nbsp;
+  
+
+
+</body></html>
